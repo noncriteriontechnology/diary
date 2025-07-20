@@ -1,17 +1,14 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
 // Generate JWT token
 const generateToken = (userId) => {
-  return jwt.sign({ userId }, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN
+  return jwt.sign({ userId }, process.env.JWT_SECRET || 'fallback_secret', {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
   });
 };
 
-// Middleware to protect routes
+// Protect routes middleware
 const protect = async (req, res, next) => {
   try {
     let token;
@@ -29,7 +26,7 @@ const protect = async (req, res, next) => {
     }
 
     // Verify token
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'fallback_secret');
     
     // Get user from token
     const user = await User.findById(decoded.userId).select('-password');
@@ -44,7 +41,7 @@ const protect = async (req, res, next) => {
     if (!user.isActive) {
       return res.status(401).json({
         success: false,
-        message: 'Account is deactivated. Please contact support.'
+        message: 'User account is deactivated.'
       });
     }
 
@@ -52,43 +49,14 @@ const protect = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
-    
-    if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid token.'
-      });
-    }
-    
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired.'
-      });
-    }
-
-    res.status(500).json({
+    return res.status(401).json({
       success: false,
-      message: 'Server error during authentication.'
+      message: 'Token is not valid.'
     });
   }
 };
 
-// Middleware to check if user is admin (for future use)
-const authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. Insufficient permissions.'
-      });
-    }
-    next();
-  };
-};
-
 module.exports = {
   generateToken,
-  protect,
-  authorize
+  protect
 };

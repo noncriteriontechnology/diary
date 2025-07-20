@@ -1,13 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'providers/auth_provider.dart';
-import 'providers/client_provider.dart';
-import 'providers/appointment_provider.dart';
-import 'providers/note_provider.dart';
-import 'screens/splash_screen.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/home/home_screen.dart';
-import 'utils/app_theme.dart';
 
 void main() {
   runApp(const LawyersDiaryApp());
@@ -18,55 +9,63 @@ class LawyersDiaryApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ClientProvider()),
-        ChangeNotifierProvider(create: (_) => AppointmentProvider()),
-        ChangeNotifierProvider(create: (_) => NoteProvider()),
-      ],
-      child: MaterialApp(
-        title: 'Lawyer\'s Diary',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        home: const AppWrapper(),
-        debugShowCheckedModeBanner: false,
+    return MaterialApp(
+      title: 'Lawyer\'s Diary',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
       ),
+      home: const MyHomePage(title: 'Lawyer\'s Diary'),
     );
   }
 }
 
-class AppWrapper extends StatefulWidget {
-  const AppWrapper({super.key});
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key, required this.title});
+
+  final String title;
 
   @override
-  State<AppWrapper> createState() => _AppWrapperState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _AppWrapperState extends State<AppWrapper> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AuthProvider>().checkAuthStatus();
-    });
-  }
-
+class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        if (authProvider.isLoading) {
-          return const SplashScreen();
-        }
-        
-        if (authProvider.isAuthenticated) {
-          return const HomeScreen();
-        }
-        
-        return const LoginScreen();
-      },
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        title: Text(widget.title),
+      ),
+      body: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(
+              Icons.gavel,
+              size: 100,
+              color: Colors.blue,
+            ),
+            SizedBox(height: 20),
+            Text(
+              'Welcome to Lawyer\'s Diary',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Your comprehensive legal practice management app',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

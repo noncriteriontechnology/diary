@@ -1,92 +1,69 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const validator = require('validator');
 
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Name is required'],
+    required: [true, 'Please provide a name'],
     trim: true,
-    maxlength: [50, 'Name cannot exceed 50 characters']
+    maxlength: [100, 'Name cannot be more than 100 characters']
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: [true, 'Please provide an email'],
     unique: true,
     lowercase: true,
-    validate: [validator.isEmail, 'Please provide a valid email']
+    match: [
+      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+      'Please provide a valid email'
+    ]
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
+    required: [true, 'Please provide a password'],
     minlength: [6, 'Password must be at least 6 characters'],
     select: false
   },
   phone: {
     type: String,
-    required: [true, 'Phone number is required'],
-    validate: {
-      validator: function(v) {
-        return /^\+?[\d\s\-\(\)]{10,}$/.test(v);
-      },
-      message: 'Please provide a valid phone number'
-    }
+    trim: true
   },
   barNumber: {
     type: String,
-    required: [true, 'Bar registration number is required'],
-    unique: true,
     trim: true
   },
-  firm: {
+  specialization: {
     type: String,
-    trim: true,
-    maxlength: [100, 'Firm name cannot exceed 100 characters']
+    trim: true
   },
-  specialization: [{
+  firmName: {
     type: String,
-    enum: ['Criminal Law', 'Civil Law', 'Corporate Law', 'Family Law', 'Property Law', 'Tax Law', 'Labor Law', 'Constitutional Law', 'Other']
-  }],
+    trim: true
+  },
   isActive: {
     type: Boolean,
     default: true
-  },
-  lastLogin: {
-    type: Date
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
   }
+}, {
+  timestamps: true
 });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
   
-  this.password = await bcrypt.hash(this.password, 12);
-  next();
-});
-
-// Update updatedAt field before saving
-userSchema.pre('save', function(next) {
-  this.updatedAt = Date.now();
-  next();
+  try {
+    const salt = await bcrypt.genSalt(12);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
 
 // Compare password method
 userSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
-};
-
-// Update last login
-userSchema.methods.updateLastLogin = function() {
-  this.lastLogin = new Date();
-  return this.save();
 };
 
 module.exports = mongoose.model('User', userSchema);
